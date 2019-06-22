@@ -1,55 +1,43 @@
-[![Build Status](https://travis-ci.org/PrismaPhonic/Pomodoro.svg?branch=master)](https://travis-ci.org/PrismaPhonic/Pomodoro)
-[![crates.io](http://meritbadge.herokuapp.com/pomodoro)](https://crates.io/crates/pomodoro)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Released API
-docs](https://docs.rs/pomodoro/badge.svg)](https://docs.rs/pomodoro)
+| 源                                       |
+| ---------------------------------------- |
+| https://github.com/PrismaPhonic/Pomodoro |
 
-# pomodoro
+# 番茄钟（本项目 fork 而来，但并没有与源合并）
 
-This crate offers you a functional terminal based pomodoro clock.
+这个箱子为您提供终端上的番茄钟。
 
-# Dependencies
+## 下载与构建
 
- This application works on Linux and OSX, but not Windows (yet). On linux make sure that you
- have libdbus-1 installed - this is an essentialy dependency so that pomodoro can integrate
- with the linux notification system.
-
-# Installation
-
-This clock requires being built with nightly because of an experimental feature I used to keep
-the clock in sync and never fluctuating by more than 1ms.  You can install the application with this command:
-
-```terminal
-$ cargo +nightly install pomodoro
+```bash
+git clone https://github.com/chinanf-boy/Pomodoro.git
+cd Pomodoro
+# 运行
+cargo run -- -w 1 -s 1
+# 构建
+cargo build --release
 ```
 
-Note: On OSX you don't need to install anything extra. Just use the above terminal command to
-install the binary crate with nightly
+> 最好选择 build 版本，复制项目目录下生成的`./target/release/pomodoro` 到 终端（的环境变量）接触的地方。
 
-## Using pomodoro
+## 使用番茄钟
 
-To use, simply run it. By default it will give you a work time of 25 minutes, short break of 5
-minutes and a long break of 20 minutes.
+要使用，只需运行它。默认情况下，它会给你 25 分钟的工作时间，5 分钟的短休息和 20 分钟的长休息。
 
 ```terminal
 $ pomodoro
 ```
 
-You can pass it terminal flags to customize the times.  `-w` flag will set the work time, `-s`
-will set the short break time, and `-l` will set the long break time.  Here's an example that
-sets up a custom pomodoro with 30 minute work time, 10 minute short break and 25 minute long
-break:
+您可以传递终端标志来自定义时间。`-w`会设置工作时间，`-s`将设置短休息时间，而`-l`将设置长休息时间。这是一个设置自定义番茄钟的例子，工作时间为 30 分钟，短休息时间为 10 分钟，长休息时间为 25 分钟：
 
 ```terminal
 $ pomodoro -w 30 -s 10 -l 25
 ```
 
-All of the controls for starting, quitting or resetting a pomodoro are displayed by the
-pomodoro menu on launch. `s` will start your next pomodoro. `q` will take you back to the
-menu if you are in a pomodoro, or quit if you are at the menu. `r` will reset the current
-pomodoro (back to the head of the work cycle and immediately begin countdown).
+## 相关
 
-Commands are listened for in an asynchronous and non-blocking fashion.
+Cargo.toml
 
-Enjoy!
-
+- `termion = "1.5.1"` 终端输出的控制
+- `rodio = "0.9.0"` 音频播放
+- `rust-embed="4.3.0"` 文件嵌入二进制
+- `structopt = "0.2.14"` 命令行参数结构宏
