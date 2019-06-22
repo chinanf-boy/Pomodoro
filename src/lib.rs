@@ -47,19 +47,20 @@
 //!
 //! Enjoy!
 
-#[macro_use]
 extern crate structopt;
+extern crate rodio;
+#[macro_use]
+extern crate rust_embed;
 
 use std::io;
 use std::io::{Read, Write};
-use std::thread::sleep;
+
+use std::thread::{sleep, self};
 use std::time::{Duration, Instant};
 
 use std::error::Error;
 use termion::raw::IntoRawMode;
 use termion::{clear, cursor, style};
-
-use notify_rust::Notification;
 
 /// The pomodoro menu.
 const POMODORO_MENU: &'static str = "
@@ -87,12 +88,12 @@ pub const CONTROLS: &'static str = "
 ";
 
 /// Pinging sound when clock is up.
-#[cfg(target_os = "macos")]
-static SOUND: &'static str = "Ping";
+// #[cfg(target_os = "macos")]
+// static SOUND: &'static str = "Ping";
 
-#[cfg(all(unix, not(target_os = "macos")))]
-static SOUND: &'static str = "alarm-clock-elapsed";
-
+// #[cfg(all(unix, not(target_os = "macos")))]
+// static SOUND: &'static str = "alarm-clock-elapsed";
+mod sound;
 /**
  * Terminal flag settings
  */
@@ -135,6 +136,7 @@ pub struct PomodoroSession<R, W> {
 impl<R: Read, W: Write> PomodoroSession<R, W> {
     fn start(&mut self) {
         write!(self.stdout, "{}", cursor::Hide).unwrap();
+        
         self.display_menu(Some(POMODORO_START_PROMPT));
     }
 
@@ -173,6 +175,7 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
 
     /// Countdown count for work - with syncing so we are never more than a ms off from true time.
     pub fn countdown_work(&mut self) {
+        self.draw_work_screen(); // first time draw
         loop {
             let true_elapsed: u64 = (self
                 .pomodoro_tracker
@@ -186,11 +189,13 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
             // correct any errors from actual elapsed time and add 1 second to
             // sleep to sync our display clock
             let clock_elapsed = (self.config.work_time * 60_000) - self.clock.get_ms_from_time();
-
+            let _handle = thread::current();
+            // println!("{:?}", _handle.name());
             let sync_offset = true_elapsed - clock_elapsed;
-
+            // println!("{:?}, {:?}, {:?}, {:?}", sync_offset, self.clock.get_ms_from_time(), clock_elapsed, true_elapsed);
+            
             sleep(Duration::from_millis(1000 - sync_offset));
-
+            // println!("{:?}", self.pomodoro_tracker.started_at.unwrap().elapsed().as_secs());
             match self.async_command_listen() {
                 Command::Quit => return,
                 Command::Reset => return self.reset_current_pomodoro(),
@@ -208,15 +213,11 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
                 break;
             }
         }
-        Notification::new()
-            .summary("Pomodoro Break!")
-            .body("It's Time For a Break!")
-            .appname("Pomodoro")
-            .sound_name(SOUND)
-            .icon("appointment-soon")
-            .show()
-            .unwrap();
         self.pomodoro_tracker.set_break_state();
+        let _handle = thread::current();
+        // println!("{:?}", _handle.name());
+        thread::spawn(||{sound::radio_play();});
+        // sleep(Duration::from_millis(1500));
         self.start_break();
     }
 
@@ -263,6 +264,7 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
                 + (self.config.work_time * 60_000);
 
             let sync_offset = true_elapsed - clock_elapsed;
+            // println!("{:?}, {:?}, {:?}, {:?}", sync_offset, self.clock.get_ms_from_time(), clock_elapsed, true_elapsed);
 
             sleep(Duration::from_millis(1000 - sync_offset));
 
@@ -279,14 +281,8 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
                 break;
             }
         }
-        Notification::new()
-            .summary("Pomodoro Break Over")
-            .body("Ready for Another Round?")
-            .appname("Pomodoro")
-            .sound_name(SOUND)
-            .icon("appointment-soon")
-            .show()
-            .unwrap();
+        thread::spawn(||{sound::radio_play();});
+        // sleep(Duration::from_millis(1500));
     }
 
     /**
@@ -397,14 +393,19 @@ impl<R: Read, W: Write> PomodoroSession<R, W> {
         let last_i = self.draw_centered(menu, None);
 
         self.clear_lines(&[last_i + 1, last_i + 8]);
-
+        
         self.stdout.flush().unwrap();
+        if menu != POMODORO_MENU {
+            // println!("{:?}", LOG.elapsed().as_millis());
 
-        match self.wait_for_next_command() {
-            Command::Start => self.begin_cycle(),
-            Command::Quit => return,
-            Command::Reset => (),
-            Command::None => (),
+            self.begin_cycle();
+        }else{
+            match self.wait_for_next_command() {
+                    Command::Start => self.begin_cycle(),
+                    Command::Quit => return,
+                    Command::Reset => (),
+                    Command::None => (),
+                }
         }
     }
 
