@@ -93,7 +93,7 @@ pub const CONTROLS: &'static str = "
 
 // #[cfg(all(unix, not(target_os = "macos")))]
 // static SOUND: &'static str = "alarm-clock-elapsed";
-mod sound;
+pub mod sound;
 /**
  * Terminal flag settings
  */
